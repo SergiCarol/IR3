@@ -41,7 +41,7 @@ airportHash = dict()  # hash key IATA code -> Airport
 
 
 def readAirports(fd):
-    print("Reading Airport file from {0}".format(fd))
+    print "Reading Airport file from {0}".format(fd)
     airportsTxt = open(fd, "r")
     cont = 0
     for line in airportsTxt.readlines():
@@ -59,11 +59,11 @@ def readAirports(fd):
             airportList.append(a)
             airportHash[a.code] = a
     airportsTxt.close()
-    print("There were {0} Airports with IATA code".format(cont))
+    print "There were {0} Airports with IATA code".format(cont)
 
 
 def readRoutes(fd):
-    print("Reading Routes file from {0}".format(fd))
+    print "Reading Routes file from {0}".format(fd)
     routesTxt = open(fd, "r")
     for line in routesTxt.readlines():
         e = Edge()
@@ -90,14 +90,14 @@ def readRoutes(fd):
 def computePageRanks(x=11):
     n = len(airportList)
     L = 0.9
-    P = [1.0 / n for _ in range(n)]
+    P = [1.0 / n for _ in xrange(n)]
     y = 0
 
     while (y < x):
         if sum(P) != 1:
-            print("SUM NOT EQUAL TO 1")
-        Q = [0 for _ in range(n)]
-        for i in range(n):
+            print "SUM NOT EQUAL TO 1"
+        Q = [0 for _ in xrange(n)]
+        for i in xrange(n):
             s = 0
             for route in airportList[i].routes:
                 origin = route.origin
@@ -107,19 +107,19 @@ def computePageRanks(x=11):
             Q[i] = L * s + (1 - L) / n
         P = Q
         y += 1
-        print("Iteration", y)
-    for i in range(n):
+        print "Iteration", y
+    for i in xrange(n):
         airportList[i].pageIndex = P[i]
     return x
 
 
 def outputPageRanks():
     for airport in airportList:
-        print(airport)
+        print airport
 
 
 def compNormWeights():
-    for edge in list(edgeHash.values()):
+    for edge in edgeHash.values():
         airport = airportHash[edge.origin]
         edge.weight = edge.weight / airport.outweight
 
@@ -132,8 +132,8 @@ def main(argv=None):
     iterations = computePageRanks()
     time2 = time.time()
     outputPageRanks()
-    print("#Iterations:", iterations)
-    print("Time of computePageRanks():", time2 - time1)
+    print "#Iterations:", iterations
+    print "Time of computePageRanks():", time2 - time1
 
 
 if __name__ == "__main__":
