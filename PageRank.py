@@ -5,6 +5,8 @@ import time
 import sys
 import numpy as np
 
+#  import cProfile
+
 
 class Edge:
     def __init__(self, origin=None):
@@ -25,6 +27,7 @@ class Airport:
         self.routeHash = dict()
         self.outweight = 0   # write appropriate value
         self.pageIndex = 0
+        self.listIndex = 0
 
     def __repr__(self):
         return "{0}\t{2}\t{1}".format(self.code, self.name, self.pageIndex)
@@ -33,6 +36,7 @@ class Airport:
         if isinstance(code, str):
             return self.code == code
         return False
+
 
 edgeList = []  # list of Edge
 edgeHash = dict()  # hash of edge to ease the match
@@ -52,6 +56,7 @@ def readAirports(fd):
                 raise Exception('not an IATA code')
             a.name = temp[1][1:-1] + ", " + temp[3][1:-1]
             a.code = temp[4][1:-1]
+            a.listIndex = cont
         except Exception as inst:
             continue
         else:
@@ -87,7 +92,7 @@ def readRoutes(fd):
             route.weight += 1
 
 
-def computePageRanks(x=11):
+def computePageRanks(x=1):
     n = len(airportList)
     L = 0.9
     P = [1.0 / n for _ in range(n)]
@@ -95,16 +100,17 @@ def computePageRanks(x=11):
 
     while (y < x):
         if sum(P) != 1:
-            print("SUM NOT EQUAL TO 1")
+            print("SUM NOT EQUAL TO 1", sum(P))
         Q = [0 for _ in range(n)]
         for i in range(n):
             s = 0
             for route in airportList[i].routes:
                 origin = route.origin
-                index = airportList.index(origin)
+                index = airportHash[origin].listIndex
                 s += ((P[index] *
                       route.weight) / airportList[index].outweight)
             Q[i] = L * s + (1 - L) / n
+            #print(Q[i])
         P = Q
         y += 1
         print("Iteration", y)
@@ -131,11 +137,11 @@ def main(argv=None):
     time1 = time.time()
     iterations = computePageRanks()
     time2 = time.time()
-    outputPageRanks()
+    #outputPageRanks()
     print("#Iterations:", iterations)
     print("Time of computePageRanks():", time2 - time1)
 
 
 if __name__ == "__main__":
-    sys.exit(main())
-
+    #  cProfile.run('main()')
+    main()
