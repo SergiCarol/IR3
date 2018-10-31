@@ -11,7 +11,8 @@ import numpy as np
 class Edge:
     def __init__(self, origin=None):
         self.origin = None  # write appropriate value
-        self.weight = 1  # write appropriate value
+        self.weight = 1.0  # write appropriate value
+        self.index = 0
 
     def __repr__(self):
         return "edge: {0} {1}".format(self.origin, self.weight)
@@ -25,9 +26,9 @@ class Airport:
         self.name = name
         self.routes = []
         self.routeHash = dict()
-        self.outweight = 0   # write appropriate value
-        self.pageIndex = 0
-        self.listIndex = 0
+        self.outweight = 0.0   # write appropriate value
+        self.pageIndex = 0.0
+        self.listIndex = 0.0
 
     def __repr__(self):
         return "{0}\t{2}\t{1}".format(self.code, self.name, self.pageIndex)
@@ -81,36 +82,50 @@ def readRoutes(fd):
 
         route = edgeHash.get(origin + destination)
         if route is None:
-            e.origin = origin
-            edgeHash[origin + destination] = e
             dest_airport = airportHash[destination]
+            e.origin = origin
+            e.index = len(dest_airport.routes)
+            edgeHash[origin + destination] = e
             dest_airport.routes.append(e)
-            #  dest_airport.routeHash[]
-            airportHash[origin].outweight += 1
 
         else:
-            route.weight += 1
+            route.weight += 1.0
+        airportHash[origin].outweight += 1.0
 
 
-def computePageRanks(x=1):
+def computePageRanks(x=250):
     n = len(airportList)
-    L = 0.9
-    P = [1.0 / n for _ in range(n)]
+    L = 0.2
+    P = [1.0 / n] * n
     y = 0
-
+    pre_l = ((1.0 - L) / n)
+    no_outs = filter(lambda x: x.outweight == 0, airportList)
+    num_no_outs = len(list(no_outs))
+    # In this case we can consider L to be 0, for nodes with
+    # no out edges: https://stackoverflow.com/questions/21507375/how-does-pageranking-algorithm-deal-with-webpage-without-outbound-links
+    # thus we are left with noOuts/n
+    norm = 1 / n
+    # Eq: L * Pr(of No outs) which gives the Pr of one node with no out degree
+    prNoOut = L * num_no_outs / n
     while (y < x):
-        if sum(P) != 1:
+        if not 0.99 <= sum(P) <= 1.05:
             print("SUM NOT EQUAL TO 1", sum(P))
-        Q = [0 for _ in range(n)]
+        Q = [0.0] * n
         for i in range(n):
             s = 0
             for route in airportList[i].routes:
                 origin = route.origin
                 index = airportHash[origin].listIndex
-                s += ((P[index] *
-                      route.weight) / airportList[index].outweight)
-            Q[i] = L * s + (1 - L) / n
-            #print(Q[i])
+                out = airportHash[origin].outweight
+                w = route.weight
+
+                s += P[index] * w / out
+            # We add the PR from all the other no outs vertex
+            Q[i] = L * s + pre_l + (norm * prNoOut)
+        # new page rank considering all vertex go to all vertex,
+        # just calulating the jumping part since is what we are interested
+        # with 0 out degree we have no page rank per se (norm * prNoOuts)
+        norm = (norm * prNoOut) + pre_l   # Recalculate PR of no outs
         P = Q
         y += 1
         print("Iteration", y)
@@ -124,20 +139,13 @@ def outputPageRanks():
         print(airport)
 
 
-def compNormWeights():
-    for edge in list(edgeHash.values()):
-        airport = airportHash[edge.origin]
-        edge.weight = edge.weight / airport.outweight
-
-
 def main(argv=None):
     readAirports("airports.txt")
     readRoutes("routes.txt")
-    compNormWeights()
     time1 = time.time()
     iterations = computePageRanks()
     time2 = time.time()
-    #outputPageRanks()
+    outputPageRanks()
     print("#Iterations:", iterations)
     print("Time of computePageRanks():", time2 - time1)
 
